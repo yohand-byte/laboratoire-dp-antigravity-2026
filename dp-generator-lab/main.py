@@ -101,11 +101,65 @@ async def dp_generator(request: Request):
 
 
 @app.get("/calepinage/", response_class=HTMLResponse) 
-async def calepinage_editor(request: Request, lat: float = 43.32637, lon: float = 5.394495):
-    """Éditeur de calepinage interactif"""
+async def calepinage_editor(request: Request, lat: float, lon: float):
+    """Éditeur de calepinage interactif avec données réelles"""
+    
+    print(f"DEBUG: Requesting calepinage for {lat}, {lon}")
+    
+    # Récupérer les données via HTML-CARTO API
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        # Pour l'instant, on va demander 1500x1000px au 1:1000
+        scale = "1:1000"
+        print(f"DEBUG: Calling render-map with scale {scale}...")
+        try:
+            render_resp = await client.post(
+                f"{HTML_CARTO_API}/api/render-map",
+                json={
+                    "lat": lat, 
+                    "lon": lon, 
+                    "scale": scale,
+                    "width": 1600,
+                    "height": 1000,
+                    "layers": ["ortho"],
+                    "show_scale_bar": False,
+                    "show_compass": False
+                }
+            )
+            print(f"DEBUG: render-map status: {render_resp.status_code}")
+        except Exception as e:
+            print(f"ERROR: render-map failed: {e}")
+            render_resp = None
+        
+        b64_image = ""
+        mpp = 0.264 # Par défaut pour 1:1000
+        
+        if render_resp and render_resp.status_code == 200:
+            data = render_resp.json()
+            full_b64 = data.get("image", "")
+            print(f"DEBUG: Image received, length: {len(full_b64)}")
+            if "," in full_b64:
+                b64_image = full_b64.split(",")[1]
+            else:
+                b64_image = full_b64
+            
+            # MPP: 1:1000 => 0.264m/px, 1:500 => 0.132m/px
+            mpp = 0.264 if scale == "1:1000" else 0.132
+        else:
+            print("ERROR: Failed to get map image")
+
+    # Config JSON pour éviter erreurs JS
+    cfg_data = {"lat": lat, "lon": lon, "mpp": mpp}
+    import json
+    cfg_json = json.dumps(cfg_data)
+
     return templates.TemplateResponse(
         "calepinage_v3_template.html",
-        {"request": request, "lat": lat, "lon": lon}
+        {
+            "request": request, 
+            "cfg_json": cfg_json,
+            "b64": b64_image,
+            "pinfo": f"Lat: {lat:.6f}, Lon: {lon:.6f}"
+        }
     )
 
 

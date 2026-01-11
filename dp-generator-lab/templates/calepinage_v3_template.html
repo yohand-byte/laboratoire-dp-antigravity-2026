@@ -1,407 +1,694 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Calepinage v3</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Segoe UI,sans-serif;background:#0a0a12;color:#fff;overflow:hidden}
-.app{display:flex;height:100vh}
-.side{width:280px;background:#1a1a2e;padding:12px;overflow-y:auto;border-right:1px solid #333}
-.logo{color:#4CAF50;font-weight:bold;padding:8px 0 12px;border-bottom:2px solid #4CAF50;margin-bottom:12px}
-h2{font-size:.85em;color:#2196F3;margin:12px 0 6px}
-.info{background:rgba(255,255,255,.05);padding:8px;border-radius:5px;font-size:.8em;margin-bottom:8px}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.stat{background:#1a1a2e;padding:8px;border-radius:5px;text-align:center}
-.stat b{display:block;font-size:1.3em;color:#4CAF50}
-.stat span{font-size:.7em;color:#888}
-.ctrl{margin:8px 0}
-.ctrl label{display:block;font-size:.75em;color:#aaa;margin-bottom:4px}
-.ctrl select,.ctrl input[type=number]{width:100%;padding:6px;border-radius:4px;background:#222;color:#fff;border:1px solid #444}
-.btn{padding:8px 12px;border:none;border-radius:5px;cursor:pointer;font-size:.8em;font-weight:600}
-.bp{background:#4CAF50;color:#fff}.bs{background:#2196F3;color:#fff}
-.bd{background:#333;color:#fff}.bd:hover{background:#444}.bd.on{background:#4CAF50}
-.br{background:#c62828;color:#fff}
-.bg{display:flex;gap:4px;margin:6px 0}.bg .btn{flex:1;padding:6px}
-.main{flex:1;display:flex;flex-direction:column}
-.tb{display:flex;gap:6px;padding:8px 12px;background:#111;border-bottom:1px solid #333;flex-wrap:wrap;align-items:center}
-.tabs{display:flex;background:#222;border-radius:5px;overflow:hidden}
-.tab{padding:6px 16px;background:0;border:0;color:#888;cursor:pointer;font-weight:600}
-.tab.on{background:#4CAF50;color:#fff}
-.sep{width:1px;height:24px;background:#333;margin:0 4px}
-.cc{flex:1;position:relative;overflow:hidden;background:#000}
-#c2d{position:absolute;transform-origin:0 0}
-#v3d{position:absolute;top:0;left:0;width:100%;height:100%;display:none}
-.mark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:1000}
-.sel{position:absolute;border:2px dashed #4CAF50;background:rgba(76,175,80,.15);pointer-events:none;z-index:100;display:none}
-.pop{position:absolute;background:rgba(0,0,0,.95);border:1px solid #4CAF50;border-radius:8px;padding:12px;z-index:200;display:none;min-width:220px}
-.pop h3{color:#4CAF50;margin-bottom:8px;font-size:.95em}
-.gprev{display:grid;gap:2px;margin:8px 0;justify-content:center}
-.gcell{width:18px;height:26px;background:#1a1a3d;border:1px solid #444;border-radius:2px}
-.ov{position:absolute;background:rgba(0,0,0,.8);padding:4px 8px;border-radius:4px;font-size:.7em;z-index:50}
-.ov.tl{top:8px;left:8px}.ov.tr{top:8px;right:8px}.ov.br{bottom:8px;right:8px}
-.badge{padding:3px 10px;border-radius:10px;font-weight:bold}
-.badge.add{background:#4CAF50}.badge.zone{background:#FF9800}.badge.pan{background:#2196F3}.badge.sel{background:#9C27B0}
-.ptex{width:100%;height:50px;background:linear-gradient(135deg,#1a1a3d,#0d0d25,#1a1a3d);border:3px solid #b0b0b0;border-radius:3px;margin:6px 0}
-</style></head><body>
-<div class="app">
-<div class="side">
-<div class="logo">☀️ SOLAIRE FACILE v3</div>
-<div class="info">📍 {{LAT}}, {{LON}}<br>📋 {{PINFO}}</div>
-<h2>📊 INSTALLATION</h2>
-<div class="stats">
-<div class="stat"><b id="sN">0</b><span>Panneaux</span></div>
-<div class="stat"><b id="sP">0</b><span>kWc</span></div>
-<div class="stat"><b id="sPr">0</b><span>kWh/an</span></div>
-<div class="stat"><b id="sS">0</b><span>m²</span></div>
-</div>
-<h2>🔧 PANNEAU</h2>
-<div class="ptex"></div>
-<div class="ctrl"><label>Modèle</label><select id="pmod">
-<option value="1.722,1.134,400">JA Solar 400W</option>
-<option value="1.762,1.134,450" selected>Longi 450W</option>
-<option value="1.903,1.134,500">Trina 500W</option>
-</select></div>
-<div class="ctrl"><label>Orientation (Sud)</label><select id="ori">
-<option value="135">Sud-Est (135°)</option>
-<option value="157">Sud-Sud-Est</option>
-<option value="180" selected>Sud (180°)</option>
-<option value="203">Sud-Sud-Ouest</option>
-<option value="225">Sud-Ouest (225°)</option>
-</select></div>
-<h2>📐 GRILLE (Zone)</h2>
-<div class="bg">
-<button class="btn bd" onclick="gp(2,1)">2×1</button>
-<button class="btn bd" onclick="gp(3,2)">3×2</button>
-<button class="btn bd" onclick="gp(4,2)">4×2</button>
-<button class="btn bd" onclick="gp(4,3)">4×3</button>
-<button class="btn bd" onclick="gp(6,2)">6×2</button>
-</div>
-<div class="ctrl"><label>Colonnes × Lignes</label><div style="display:flex;gap:8px">
-<input type="number" id="gc" value="4" min="1" max="12">
-<input type="number" id="gr" value="2" min="1" max="12">
-</div></div>
-<div class="ctrl"><label>Rotation carte: <span id="mapRotVal">0°</span></label><input type="range" id="mapRot" min="0" max="359" value="0"></div>
-<div class="ctrl"><label>Espacement: <span id="gv">5cm</span></label><input type="range" id="gap" min="0" max="20" value="5"></div>
-<h2>💾 EXPORT</h2>
-<div class="bg">
-<button class="btn bs" onclick="expImg()">📷 Image</button>
-<button class="btn bs" onclick="expJSON()">💾 JSON</button>
-</div>
-<button class="btn br" style="width:100%;margin-top:4px" onclick="clr()">🗑️ Effacer tout</button>
-</div>
-<div class="main">
-<div class="tb">
-<div class="tabs">
-<button class="tab on" onclick="setV('2d')">📷 Vue 2D</button>
-<button class="tab" onclick="setV('3d')">🎮 Vue 3D</button>
-</div>
-<div class="sep"></div>
-<button class="btn bd on" id="ba" onclick="setM('add')">➕ Ajouter</button>
-<button class="btn bd" id="bz" onclick="setM('zone')">⬛ Zone (4 clics)</button>
-<button class="btn bd" id="bp" onclick="setM('pan')">✋ Déplacer</button>
-<button class="btn bd" id="bsel" onclick="setM('sel')">🎯 Sélect</button>
-<div class="sep"></div>
-<button class="btn bd" onclick="zIn()">🔍+</button>
-<button class="btn bd" onclick="zOut()">🔍−</button>
-<button class="btn bd" onclick="zRst()">⌂</button>
-<div class="sep"></div>
-<button class="btn bd" onclick="undo()">↩️</button>
-<button class="btn bd" onclick="delSel()">🗑️</button>
-</div>
-<div class="cc" id="cc">
-<canvas id="c2d"></canvas>
-<div id="v3d"></div>
-<div class="mark"><svg width="40" height="40" viewBox="0 0 40 40">
-<circle cx="20" cy="20" r="8" fill="none" stroke="#ff0000" stroke-width="2.5"/>
-<line x1="20" y1="2" x2="20" y2="14" stroke="#ff0000" stroke-width="2.5"/>
-<line x1="20" y1="26" x2="20" y2="38" stroke="#ff0000" stroke-width="2.5"/>
-<line x1="2" y1="20" x2="14" y2="20" stroke="#ff0000" stroke-width="2.5"/>
-<line x1="26" y1="20" x2="38" y2="20" stroke="#ff0000" stroke-width="2.5"/>
-<circle cx="20" cy="20" r="3" fill="#ff0000"/>
-</svg></div>
-<div class="sel" id="sel"></div>
-<div class="pop" id="pop">
-<h3>⬛ Placer une grille</h3>
-<div class="ctrl"><label>Colonnes × Lignes</label><div style="display:flex;gap:6px;align-items:center">
-<input type="number" id="zc" value="4" min="1" max="12" style="width:50px">
-<span>×</span>
-<input type="number" id="zr" value="2" min="1" max="12" style="width:50px">
-<span>=</span>
-<b id="zt">8</b> panneaux
-</div></div>
-<div class="gprev" id="gprev"></div>
-<div class="bg"><button class="btn bp" onclick="confZ()">✓ Placer</button><button class="btn bd" onclick="canZ()">✗ Annuler</button></div>
-</div>
-<div class="ov tl"><span class="badge add" id="mbadge">AJOUT</span></div>
-<div class="ov tr"><span id="zbadge">100%</span></div>
-<div class="ov br" id="coord">--</div>
-</div>
-</div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-const CFG={lat:{{LAT}},lon:{{LON}},mpp:{{MPP}}};
-let P=[],selP=null,mode='add',view='2d',ori=180;
-let pmod={w:1.762,h:1.134,p:450},gap=5,mapRot=0;
-let V={s:1,ox:0,oy:0},D={on:false,lx:0,ly:0};
-let zonePoints=[];  // 4 corner points for zone
-let hist=[],sc3,cam3,ren3,pm3=[];
+<html>
 
-const cc=document.getElementById('cc'),cv=document.getElementById('c2d'),ctx=cv.getContext('2d');
-const bg=new Image();
+<head>
+    <meta charset="UTF-8">
+    <title>Calepinage v3</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
 
-// Panel texture canvas
-const ptex=document.createElement('canvas');ptex.width=200;ptex.height=300;
-const pctx=ptex.getContext('2d');
-pctx.fillStyle='#b8b8b8';pctx.fillRect(0,0,200,300);
-let g=pctx.createLinearGradient(6,6,194,294);
-g.addColorStop(0,'#1a1a42');g.addColorStop(.5,'#0e0e28');g.addColorStop(1,'#1a1a42');
-pctx.fillStyle=g;pctx.fillRect(6,6,188,288);
-for(let i=0;i<6;i++)for(let j=0;j<10;j++){
-let cx=6+i*31+1,cy=6+j*28+1;
-let cg=pctx.createLinearGradient(cx,cy,cx+29,cy+26);
-cg.addColorStop(0,'#1e1e50');cg.addColorStop(.5,'#121235');cg.addColorStop(1,'#1e1e50');
-pctx.fillStyle=cg;pctx.fillRect(cx,cy,29,26);
-pctx.strokeStyle='rgba(180,180,200,.3)';pctx.lineWidth=1;
-for(let b=1;b<=3;b++){pctx.beginPath();pctx.moveTo(cx,cy+26*b/4);pctx.lineTo(cx+29,cy+26*b/4);pctx.stroke();}
-}
-let rf=pctx.createLinearGradient(0,0,200,300);
-rf.addColorStop(0,'rgba(255,255,255,.12)');rf.addColorStop(.3,'rgba(255,255,255,.02)');
-rf.addColorStop(.7,'rgba(255,255,255,0)');rf.addColorStop(1,'rgba(255,255,255,.08)');
-pctx.fillStyle=rf;pctx.fillRect(0,0,200,300);
+        body {
+            font-family: Segoe UI, sans-serif;
+            background: #0a0a12;
+            color: #fff;
+            overflow: hidden
+        }
 
-bg.onload=()=>{cv.width=bg.width;cv.height=bg.height;ctrV();render();init3D();};
-bg.src='data:image/jpeg;base64,{{B64}}';
+        .app {
+            display: flex;
+            height: 100vh
+        }
 
-function m2px(m){return m/CFG.mpp;}
-function ctrV(){V.ox=(cc.clientWidth-cv.width*V.s)/2;V.oy=(cc.clientHeight-cv.height*V.s)/2;updT();}
-function updT(){cv.style.transform=`translate(${V.ox}px,${V.oy}px) scale(${V.s}) rotate(${mapRot}deg)`;document.getElementById('zbadge').textContent=Math.round(V.s*100)+'%';}
+        .side {
+            width: 280px;
+            background: #1a1a2e;
+            padding: 12px;
+            overflow-y: auto;
+            border-right: 1px solid #333
+        }
 
-function render(){
-ctx.clearRect(0,0,cv.width,cv.height);
-ctx.drawImage(bg,0,0);
-P.forEach((p,i)=>{
-ctx.save();ctx.translate(p.x,p.y);ctx.rotate((p.o-180)*Math.PI/180);
-ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=6;ctx.shadowOffsetX=3;ctx.shadowOffsetY=3;
-ctx.drawImage(ptex,-p.wpx/2,-p.hpx/2,p.wpx,p.hpx);
-ctx.shadowColor='transparent';
-if(i===selP){ctx.strokeStyle='#f44';ctx.lineWidth=4;ctx.strokeRect(-p.wpx/2-3,-p.hpx/2-3,p.wpx+6,p.hpx+6);}
-ctx.restore();
-});
-// Draw zone points
-if(zonePoints.length>0){
-ctx.strokeStyle='#4CAF50';ctx.fillStyle='#4CAF50';ctx.lineWidth=2;
-zonePoints.forEach((pt,i)=>{
-ctx.beginPath();ctx.arc(pt.x,pt.y,8,0,Math.PI*2);ctx.fill();
-ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.fillText(i+1,pt.x-3,pt.y+4);ctx.fillStyle='#4CAF50';
-});
-if(zonePoints.length>1){
-ctx.beginPath();ctx.moveTo(zonePoints[0].x,zonePoints[0].y);
-for(let i=1;i<zonePoints.length;i++)ctx.lineTo(zonePoints[i].x,zonePoints[i].y);
-if(zonePoints.length===4)ctx.closePath();
-ctx.stroke();
-}
-}
-updStats();
-}
+        .logo {
+            color: #4CAF50;
+            font-weight: bold;
+            padding: 8px 0 12px;
+            border-bottom: 2px solid #4CAF50;
+            margin-bottom: 12px
+        }
 
-function updStats(){
-const n=P.length,kw=P.reduce((s,p)=>s+p.pw,0)/1000;
-document.getElementById('sN').textContent=n;
-document.getElementById('sP').textContent=kw.toFixed(2);
-document.getElementById('sPr').textContent=Math.round(kw*1150);
-document.getElementById('sS').textContent=P.reduce((s,p)=>s+p.wm*p.hm,0).toFixed(1);
-}
+        h2 {
+            font-size: .85em;
+            color: #2196F3;
+            margin: 12px 0 6px
+        }
 
-function setM(m){
-mode=m;
-['ba','bz','bp','bsel'].forEach(id=>document.getElementById(id).classList.remove('on'));
-document.getElementById({add:'ba',zone:'bz',pan:'bp',sel:'bsel'}[m]).classList.add('on');
-const bd=document.getElementById('mbadge');
-bd.textContent={add:'AJOUT',zone:'ZONE',pan:'DÉPLACER',sel:'SÉLECTION'}[m];
-bd.className='badge '+{add:'add',zone:'zone',pan:'pan',sel:'sel'}[m];
-cv.style.cursor={add:'crosshair',zone:'crosshair',pan:'grab',sel:'pointer'}[m];
-}
+        .info {
+            background: rgba(255, 255, 255, .05);
+            padding: 8px;
+            border-radius: 5px;
+            font-size: .8em;
+            margin-bottom: 8px
+        }
 
-function addP(cx,cy){
-hist.push(JSON.stringify(P));if(hist.length>50)hist.shift();
-P.push({x:cx,y:cy,o:ori,wpx:m2px(pmod.w),hpx:m2px(pmod.h),wm:pmod.w,hm:pmod.h,pw:pmod.p});
-render();
-}
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px
+        }
 
-function addGrid(cx,cy,c,r){
-hist.push(JSON.stringify(P));if(hist.length>50)hist.shift();
-const wpx=m2px(pmod.w),hpx=m2px(pmod.h),gPx=m2px(gap/100);
-const tw=c*wpx+(c-1)*gPx,th=r*hpx+(r-1)*gPx;
-const sx=cx-tw/2+wpx/2,sy=cy-th/2+hpx/2;
-for(let ri=0;ri<r;ri++)for(let ci=0;ci<c;ci++)
-P.push({x:sx+ci*(wpx+gPx),y:sy+ri*(hpx+gPx),o:ori,wpx,hpx,wm:pmod.w,hm:pmod.h,pw:pmod.p});
-render();
-}
+        .stat {
+            background: #1a1a2e;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center
+        }
 
-function selAt(cx,cy){selP=null;for(let i=P.length-1;i>=0;i--){const p=P[i];if(Math.abs(cx-p.x)<p.wpx/2&&Math.abs(cy-p.y)<p.hpx/2){selP=i;break;}}render();}
-function delSel(){if(selP!==null){hist.push(JSON.stringify(P));P.splice(selP,1);selP=null;render();}}
-function clr(){if(P.length&&confirm('Tout effacer?')){hist.push(JSON.stringify(P));P=[];selP=null;render();}}
-function undo(){if(hist.length){P=JSON.parse(hist.pop());selP=null;render();}}
+        .stat b {
+            display: block;
+            font-size: 1.3em;
+            color: #4CAF50
+        }
 
-function zIn(){const r=1.3;V.s=Math.min(5,V.s*r);V.ox=cc.clientWidth/2-(cc.clientWidth/2-V.ox)*r;V.oy=cc.clientHeight/2-(cc.clientHeight/2-V.oy)*r;updT();}
-function zOut(){const r=1.3;V.s=Math.max(.2,V.s/r);V.ox=cc.clientWidth/2-(cc.clientWidth/2-V.ox)/r;V.oy=cc.clientHeight/2-(cc.clientHeight/2-V.oy)/r;updT();}
-function zRst(){V.s=1;ctrV();}
+        .stat span {
+            font-size: .7em;
+            color: #888
+        }
 
-// Zone popup
-const pop=document.getElementById('pop'),sel=document.getElementById('sel');
-function showPop(x,y){pop.style.left=Math.min(x,window.innerWidth-250)+'px';pop.style.top=Math.min(y,window.innerHeight-200)+'px';pop.style.display='block';updGP();}
-function hidePop(){pop.style.display='none';}
-function updGP(){
-const c=+document.getElementById('zc').value||4,r=+document.getElementById('zr').value||2;
-document.getElementById('zt').textContent=c*r;
-document.getElementById('gprev').style.gridTemplateColumns=`repeat(${c},18px)`;
-document.getElementById('gprev').innerHTML=Array(c*r).fill('<div class="gcell"></div>').join('');
-}
-function confZ(){
-if(zonePoints.length<4)return;
-const c=+document.getElementById('zc').value||4,r=+document.getElementById('zr').value||2;
-// Calculate center of 4 points
-const cx=(zonePoints[0].x+zonePoints[1].x+zonePoints[2].x+zonePoints[3].x)/4;
-const cy=(zonePoints[0].y+zonePoints[1].y+zonePoints[2].y+zonePoints[3].y)/4;
-addGrid(cx,cy,c,r);
-hidePop();zonePoints=[];render();
-}
-function canZ(){hidePop();zonePoints=[];render();}
-function gp(c,r){document.getElementById('gc').value=c;document.getElementById('gr').value=r;document.getElementById('zc').value=c;document.getElementById('zr').value=r;updGP();}
+        .ctrl {
+            margin: 8px 0
+        }
 
-document.getElementById('zc').oninput=updGP;
-document.getElementById('zr').oninput=updGP;
+        .ctrl label {
+            display: block;
+            font-size: .75em;
+            color: #aaa;
+            margin-bottom: 4px
+        }
 
-// Events 2D
-cc.onmousedown=e=>{
-if(view!=='2d')return;
-const rect=cv.getBoundingClientRect();
-// Account for rotation
-const centerX=rect.left+rect.width/2, centerY=rect.top+rect.height/2;
-const dx=e.clientX-centerX, dy=e.clientY-centerY;
-const rad=-mapRot*Math.PI/180;
-const rx=dx*Math.cos(rad)-dy*Math.sin(rad), ry=dx*Math.sin(rad)+dy*Math.cos(rad);
-const cx=(rx+rect.width/2)/V.s, cy=(ry+rect.height/2)/V.s;
+        .ctrl select,
+        .ctrl input[type=number] {
+            width: 100%;
+            padding: 6px;
+            border-radius: 4px;
+            background: #222;
+            color: #fff;
+            border: 1px solid #444
+        }
 
-if(mode==='pan'){D.on=true;D.lx=e.clientX;D.ly=e.clientY;cv.style.cursor='grabbing';}
-else if(mode==='add')addP(cx,cy);
-else if(mode==='sel')selAt(cx,cy);
-else if(mode==='zone'){
-zonePoints.push({x:cx,y:cy});
-render();
-if(zonePoints.length===4){
-showPop(e.clientX+10,e.clientY+10);
-}
-}
-};
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: .8em;
+            font-weight: 600
+        }
 
-cc.onmousemove=e=>{
-if(view!=='2d')return;
-const rect=cv.getBoundingClientRect();
-const centerX=rect.left+rect.width/2, centerY=rect.top+rect.height/2;
-const dx=e.clientX-centerX, dy=e.clientY-centerY;
-const rad=-mapRot*Math.PI/180;
-const rx=dx*Math.cos(rad)-dy*Math.sin(rad), ry=dx*Math.sin(rad)+dy*Math.cos(rad);
-const cx=(rx+rect.width/2)/V.s, cy=(ry+rect.height/2)/V.s;
-const dmx=(cx-cv.width/2)*CFG.mpp,dmy=(cy-cv.height/2)*CFG.mpp;
-document.getElementById('coord').textContent=`Δ ${dmx.toFixed(1)}m, ${dmy.toFixed(1)}m`;
-if(D.on){V.ox+=e.clientX-D.lx;V.oy+=e.clientY-D.ly;D.lx=e.clientX;D.ly=e.clientY;updT();}
-};
+        .bp {
+            background: #4CAF50;
+            color: #fff
+        }
 
-cc.onmouseup=e=>{
-if(D.on){D.on=false;cv.style.cursor='grab';}
-};
+        .bs {
+            background: #2196F3;
+            color: #fff
+        }
 
-cc.onwheel=e=>{
-if(view!=='2d')return;
-e.preventDefault();
-const d=e.deltaY>0?.85:1.18,ns=Math.max(.2,Math.min(5,V.s*d));
-const r=ns/V.s,cx=cc.clientWidth/2,cy=cc.clientHeight/2;
-V.ox=cx-(cx-V.ox)*r;V.oy=cy-(cy-V.oy)*r;V.s=ns;updT();
-};
+        .bd {
+            background: #333;
+            color: #fff
+        }
 
-document.onkeydown=e=>{
-if(e.key==='Delete')delSel();
-if(e.key==='Escape'){selP=null;canZ();render();}
-if(e.key==='a')setM('add');if(e.key==='z')setM('zone');if(e.key==='v')setM('pan');if(e.key==='s')setM('sel');
-if(e.ctrlKey&&e.key==='z'){e.preventDefault();undo();}
-if(e.key==='Enter'&&zonePoints.length===4){showPop(window.innerWidth/2,window.innerHeight/2);}
-};
+        .bd:hover {
+            background: #444
+        }
 
-document.getElementById('pmod').onchange=e=>{const p=e.target.value.split(',');pmod={w:+p[0],h:+p[1],p:+p[2]};};
-document.getElementById('ori').onchange=e=>{ori=+e.target.value;};
-document.getElementById('gap').oninput=e=>{gap=+e.target.value;document.getElementById('gv').textContent=gap+'cm';};
-document.getElementById('mapRot').oninput=e=>{mapRot=+e.target.value;document.getElementById('mapRotVal').textContent=mapRot+'°';updT();};
+        .bd.on {
+            background: #4CAF50
+        }
 
-// 3D View
-function init3D(){
-const c3=document.getElementById('v3d');
-if(!c3.clientWidth)return setTimeout(init3D,100);
-sc3=new THREE.Scene();sc3.background=new THREE.Color(0x87CEEB);
-cam3=new THREE.PerspectiveCamera(50,c3.clientWidth/c3.clientHeight,.1,1000);
-cam3.position.set(30,25,30);cam3.lookAt(0,5,0);
-ren3=new THREE.WebGLRenderer({antialias:true});
-ren3.setSize(c3.clientWidth,c3.clientHeight);
-ren3.shadowMap.enabled=true;
-c3.innerHTML='';
-c3.appendChild(ren3.domElement);
-sc3.add(new THREE.AmbientLight(0xffffff,.6));
-const sun=new THREE.DirectionalLight(0xffffff,.8);sun.position.set(20,30,10);sun.castShadow=true;sc3.add(sun);
-const gnd=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshLambertMaterial({color:0x3d8c40}));gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;sc3.add(gnd);
-const house=new THREE.Mesh(new THREE.BoxGeometry(12,7,10),new THREE.MeshLambertMaterial({color:0xf5f5dc}));house.position.y=3.5;house.castShadow=true;sc3.add(house);
-const rs=new THREE.Shape();rs.moveTo(-7,0);rs.lineTo(0,5);rs.lineTo(7,0);rs.lineTo(-7,0);
-const roof=new THREE.Mesh(new THREE.ExtrudeGeometry(rs,{depth:12,bevelEnabled:false}),new THREE.MeshLambertMaterial({color:0x8B4513}));
-roof.rotation.x=-Math.PI/2;roof.position.set(0,7,-6);roof.castShadow=true;sc3.add(roof);
+        .br {
+            background: #c62828;
+            color: #fff
+        }
 
-let drag3=false,pm={x:0,y:0},sph={t:Math.PI/4,p:Math.PI/4,r:45};
-function updCam3(){cam3.position.x=sph.r*Math.sin(sph.p)*Math.cos(sph.t);cam3.position.y=sph.r*Math.cos(sph.p);cam3.position.z=sph.r*Math.sin(sph.p)*Math.sin(sph.t);cam3.lookAt(0,5,0);}
-ren3.domElement.onmousedown=e=>{drag3=true;pm={x:e.clientX,y:e.clientY};};
-ren3.domElement.onmousemove=e=>{if(!drag3)return;sph.t+=(e.clientX-pm.x)*.01;sph.p=Math.max(.2,Math.min(Math.PI/2-.1,sph.p-(e.clientY-pm.y)*.01));pm={x:e.clientX,y:e.clientY};updCam3();};
-ren3.domElement.onmouseup=()=>drag3=false;
-ren3.domElement.onmouseleave=()=>drag3=false;
-ren3.domElement.onwheel=e=>{e.preventDefault();sph.r=Math.max(15,Math.min(80,sph.r+e.deltaY*.03));updCam3();};
-updCam3();
-(function anim(){requestAnimationFrame(anim);if(ren3)ren3.render(sc3,cam3);})();
-}
+        .bg {
+            display: flex;
+            gap: 4px;
+            margin: 6px 0
+        }
 
-function upd3DP(){
-if(!sc3)return;
-pm3.forEach(m=>sc3.remove(m));pm3=[];
-const pg=new THREE.BoxGeometry(1.7,.05,1.1),pmat=new THREE.MeshPhongMaterial({color:0x1a1a40,specular:0x4444ff,shininess:80});
-const roofPitch=25*Math.PI/180;
-P.forEach((p,i)=>{
-const m=new THREE.Mesh(pg,pmat.clone());
-const c=i%4,r=Math.floor(i/4);
-m.position.set((c-1.5)*1.9, 8.5-r*1.2*Math.sin(roofPitch), -2+(r-0.5)*1.2);
-m.rotation.x=-roofPitch;
-m.rotation.y=(p.o-180)*Math.PI/180;
-m.castShadow=true;
-m.add(new THREE.LineSegments(new THREE.EdgesGeometry(pg),new THREE.LineBasicMaterial({color:0xcccccc})));
-sc3.add(m);pm3.push(m);
-});
-}
+        .bg .btn {
+            flex: 1;
+            padding: 6px
+        }
 
-function setV(v){
-view=v;
-document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
-document.querySelector('.tab:'+(v==='2d'?'first':'last')+'-child').classList.add('on');
-cv.style.display=v==='2d'?'block':'none';
-document.getElementById('v3d').style.display=v==='3d'?'block':'none';
-if(v==='3d'){
-if(!sc3)init3D();
-setTimeout(upd3DP,100);
-}
-}
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column
+        }
 
-function expImg(){
-const tc=document.createElement('canvas');tc.width=cv.width;tc.height=cv.height;const tctx=tc.getContext('2d');
-tctx.drawImage(bg,0,0);
-P.forEach(p=>{tctx.save();tctx.translate(p.x,p.y);tctx.rotate((p.o-180)*Math.PI/180);tctx.drawImage(ptex,-p.wpx/2,-p.hpx/2,p.wpx,p.hpx);tctx.restore();});
-const a=document.createElement('a');a.download='calepinage_'+P.length+'px.png';a.href=tc.toDataURL('image/png');a.click();
-}
+        .tb {
+            display: flex;
+            gap: 6px;
+            padding: 8px 12px;
+            background: #111;
+            border-bottom: 1px solid #333;
+            flex-wrap: wrap;
+            align-items: center
+        }
 
-function expJSON(){
-const d={location:{lat:CFG.lat,lon:CFG.lon},panels:P.map((p,i)=>({id:i+1,x:Math.round(p.x),y:Math.round(p.y),orient:p.o,w:p.wm,h:p.hm,power:p.pw})),summary:{n:P.length,kwc:(P.reduce((s,p)=>s+p.pw,0)/1000).toFixed(2),prod:Math.round(P.reduce((s,p)=>s+p.pw,0)/1000*1150)}};
-const a=document.createElement('a');a.download='calepinage.json';a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));a.click();
-}
-</script>
-</body></html>
+        .tabs {
+            display: flex;
+            background: #222;
+            border-radius: 5px;
+            overflow: hidden
+        }
+
+        .tab {
+            padding: 6px 16px;
+            background: 0;
+            border: 0;
+            color: #888;
+            cursor: pointer;
+            font-weight: 600
+        }
+
+        .tab.on {
+            background: #4CAF50;
+            color: #fff
+        }
+
+        .sep {
+            width: 1px;
+            height: 24px;
+            background: #333;
+            margin: 0 4px
+        }
+
+        .cc {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #000
+        }
+
+        #c2d {
+            position: absolute;
+            transform-origin: 0 0
+        }
+
+        #v3d {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none
+        }
+
+        .mark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1000
+        }
+
+        .sel {
+            position: absolute;
+            border: 2px dashed #4CAF50;
+            background: rgba(76, 175, 80, .15);
+            pointer-events: none;
+            z-index: 100;
+            display: none
+        }
+
+        .pop {
+            position: absolute;
+            background: rgba(0, 0, 0, .95);
+            border: 1px solid #4CAF50;
+            border-radius: 8px;
+            padding: 12px;
+            z-index: 200;
+            display: none;
+            min-width: 220px
+        }
+
+        .pop h3 {
+            color: #4CAF50;
+            margin-bottom: 8px;
+            font-size: .95em
+        }
+
+        .gprev {
+            display: grid;
+            gap: 2px;
+            margin: 8px 0;
+            justify-content: center
+        }
+
+        .gcell {
+            width: 18px;
+            height: 26px;
+            background: #1a1a3d;
+            border: 1px solid #444;
+            border-radius: 2px
+        }
+
+        .ov {
+            position: absolute;
+            background: rgba(0, 0, 0, .8);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: .7em;
+            z-index: 50
+        }
+
+        .ov.tl {
+            top: 8px;
+            left: 8px
+        }
+
+        .ov.tr {
+            top: 8px;
+            right: 8px
+        }
+
+        .ov.br {
+            bottom: 8px;
+            right: 8px
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-weight: bold
+        }
+
+        .badge.add {
+            background: #4CAF50
+        }
+
+        .badge.zone {
+            background: #FF9800
+        }
+
+        .badge.pan {
+            background: #2196F3
+        }
+
+        .badge.sel {
+            background: #9C27B0
+        }
+
+        .ptex {
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(135deg, #1a1a3d, #0d0d25, #1a1a3d);
+            border: 3px solid #b0b0b0;
+            border-radius: 3px;
+            margin: 6px 0
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <div class="side">
+            <div class="logo">☀️ SOLAIRE FACILE v3</div>
+            <div class="info">📍 {{lat}}, {{lon}}<br>📋 {{pinfo}}</div>
+            <h2>📊 INSTALLATION</h2>
+            <div class="stats">
+                <div class="stat"><b id="sN">0</b><span>Panneaux</span></div>
+                <div class="stat"><b id="sP">0</b><span>kWc</span></div>
+                <div class="stat"><b id="sPr">0</b><span>kWh/an</span></div>
+                <div class="stat"><b id="sS">0</b><span>m²</span></div>
+            </div>
+            <h2>🔧 PANNEAU</h2>
+            <div class="ptex"></div>
+            <div class="ctrl"><label>Modèle</label><select id="pmod">
+                    <option value="1.722,1.134,400">JA Solar 400W</option>
+                    <option value="1.762,1.134,450" selected>Longi 450W</option>
+                    <option value="1.903,1.134,500">Trina 500W</option>
+                </select></div>
+            <div class="ctrl"><label>Orientation (Sud)</label><select id="ori">
+                    <option value="135">Sud-Est (135°)</option>
+                    <option value="157">Sud-Sud-Est</option>
+                    <option value="180" selected>Sud (180°)</option>
+                    <option value="203">Sud-Sud-Ouest</option>
+                    <option value="225">Sud-Ouest (225°)</option>
+                </select></div>
+            <h2>📐 GRILLE (Zone)</h2>
+            <div class="bg">
+                <button class="btn bd" onclick="gp(2,1)">2×1</button>
+                <button class="btn bd" onclick="gp(3,2)">3×2</button>
+                <button class="btn bd" onclick="gp(4,2)">4×2</button>
+                <button class="btn bd" onclick="gp(4,3)">4×3</button>
+                <button class="btn bd" onclick="gp(6,2)">6×2</button>
+            </div>
+            <div class="ctrl"><label>Colonnes × Lignes</label>
+                <div style="display:flex;gap:8px">
+                    <input type="number" id="gc" value="4" min="1" max="12">
+                    <input type="number" id="gr" value="2" min="1" max="12">
+                </div>
+            </div>
+            <div class="ctrl"><label>Rotation carte: <span id="mapRotVal">0°</span></label><input type="range"
+                    id="mapRot" min="0" max="359" value="0"></div>
+            <div class="ctrl"><label>Espacement: <span id="gv">5cm</span></label><input type="range" id="gap" min="0"
+                    max="20" value="5"></div>
+            <h2>💾 EXPORT</h2>
+            <div class="bg">
+                <button class="btn bs" onclick="expImg()">📷 Image</button>
+                <button class="btn bs" onclick="expJSON()">💾 JSON</button>
+            </div>
+            <button class="btn br" style="width:100%;margin-top:4px" onclick="clr()">🗑️ Effacer tout</button>
+        </div>
+        <div class="main">
+            <div class="tb">
+                <div class="tabs">
+                    <button class="tab on" onclick="setV('2d')">📷 Vue 2D</button>
+                    <button class="tab" onclick="setV('3d')">🎮 Vue 3D</button>
+                </div>
+                <div class="sep"></div>
+                <button class="btn bd on" id="ba" onclick="setM('add')">➕ Ajouter</button>
+                <button class="btn bd" id="bz" onclick="setM('zone')">⬛ Zone (4 clics)</button>
+                <button class="btn bd" id="bp" onclick="setM('pan')">✋ Déplacer</button>
+                <button class="btn bd" id="bsel" onclick="setM('sel')">🎯 Sélect</button>
+                <div class="sep"></div>
+                <button class="btn bd" onclick="zIn()">🔍+</button>
+                <button class="btn bd" onclick="zOut()">🔍−</button>
+                <button class="btn bd" onclick="zRst()">⌂</button>
+                <div class="sep"></div>
+                <button class="btn bd" onclick="undo()">↩️</button>
+                <button class="btn bd" onclick="delSel()">🗑️</button>
+            </div>
+            <div class="cc" id="cc">
+                <canvas id="c2d"></canvas>
+                <div id="v3d"></div>
+                <div class="mark"><svg width="40" height="40" viewBox="0 0 40 40">
+                        <circle cx="20" cy="20" r="8" fill="none" stroke="#ff0000" stroke-width="2.5" />
+                        <line x1="20" y1="2" x2="20" y2="14" stroke="#ff0000" stroke-width="2.5" />
+                        <line x1="20" y1="26" x2="20" y2="38" stroke="#ff0000" stroke-width="2.5" />
+                        <line x1="2" y1="20" x2="14" y2="20" stroke="#ff0000" stroke-width="2.5" />
+                        <line x1="26" y1="20" x2="38" y2="20" stroke="#ff0000" stroke-width="2.5" />
+                        <circle cx="20" cy="20" r="3" fill="#ff0000" />
+                    </svg></div>
+                <div class="sel" id="sel"></div>
+                <div class="pop" id="pop">
+                    <h3>⬛ Placer une grille</h3>
+                    <div class="ctrl"><label>Colonnes × Lignes</label>
+                        <div style="display:flex;gap:6px;align-items:center">
+                            <input type="number" id="zc" value="4" min="1" max="12" style="width:50px">
+                            <span>×</span>
+                            <input type="number" id="zr" value="2" min="1" max="12" style="width:50px">
+                            <span>=</span>
+                            <b id="zt">8</b> panneaux
+                        </div>
+                    </div>
+                    <div class="gprev" id="gprev"></div>
+                    <div class="bg"><button class="btn bp" onclick="confZ()">✓ Placer</button><button class="btn bd"
+                            onclick="canZ()">✗ Annuler</button></div>
+                </div>
+                <div class="ov tl"><span class="badge add" id="mbadge">AJOUT</span></div>
+                <div class="ov tr"><span id="zbadge">100%</span></div>
+                <div class="ov br" id="coord">--</div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const CFG = JSON.parse('{{cfg_json|safe}}');
+        let P = [], selP = null, mode = 'add', view = '2d', ori = 180;
+        let pmod = { w: 1.762, h: 1.134, p: 450 }, gap = 5, mapRot = 0;
+        let V = { s: 1, ox: 0, oy: 0 }, D = { on: false, lx: 0, ly: 0 };
+        let zonePoints = [];  // 4 corner points for zone
+        let hist = [], sc3, cam3, ren3, pm3 = [];
+
+        const cc = document.getElementById('cc'), cv = document.getElementById('c2d'), ctx = cv.getContext('2d');
+        const bg = new Image();
+
+        // Panel texture canvas
+        const ptex = document.createElement('canvas'); ptex.width = 200; ptex.height = 300;
+        const pctx = ptex.getContext('2d');
+        pctx.fillStyle = '#b8b8b8'; pctx.fillRect(0, 0, 200, 300);
+        let g = pctx.createLinearGradient(6, 6, 194, 294);
+        g.addColorStop(0, '#1a1a42'); g.addColorStop(.5, '#0e0e28'); g.addColorStop(1, '#1a1a42');
+        pctx.fillStyle = g; pctx.fillRect(6, 6, 188, 288);
+        for (let i = 0; i < 6; i++)for (let j = 0; j < 10; j++) {
+            let cx = 6 + i * 31 + 1, cy = 6 + j * 28 + 1;
+            let cg = pctx.createLinearGradient(cx, cy, cx + 29, cy + 26);
+            cg.addColorStop(0, '#1e1e50'); cg.addColorStop(.5, '#121235'); cg.addColorStop(1, '#1e1e50');
+            pctx.fillStyle = cg; pctx.fillRect(cx, cy, 29, 26);
+            pctx.strokeStyle = 'rgba(180,180,200,.3)'; pctx.lineWidth = 1;
+            for (let b = 1; b <= 3; b++) { pctx.beginPath(); pctx.moveTo(cx, cy + 26 * b / 4); pctx.lineTo(cx + 29, cy + 26 * b / 4); pctx.stroke(); }
+        }
+        let rf = pctx.createLinearGradient(0, 0, 200, 300);
+        rf.addColorStop(0, 'rgba(255,255,255,.12)'); rf.addColorStop(.3, 'rgba(255,255,255,.02)');
+        rf.addColorStop(.7, 'rgba(255,255,255,0)'); rf.addColorStop(1, 'rgba(255,255,255,.08)');
+        pctx.fillStyle = rf; pctx.fillRect(0, 0, 200, 300);
+
+        bg.onload = () => { cv.width = bg.width; cv.height = bg.height; ctrV(); render(); init3D(); };
+        bg.src = 'data:image/png;base64,{{b64}}';
+
+        function m2px(m) { return m / CFG.mpp; }
+        function ctrV() { V.ox = (cc.clientWidth - cv.width * V.s) / 2; V.oy = (cc.clientHeight - cv.height * V.s) / 2; updT(); }
+        function updT() { cv.style.transform = `translate(${V.ox}px,${V.oy}px) scale(${V.s}) rotate(${mapRot}deg)`; document.getElementById('zbadge').textContent = Math.round(V.s * 100) + '%'; }
+
+        function render() {
+            ctx.clearRect(0, 0, cv.width, cv.height);
+            ctx.drawImage(bg, 0, 0);
+            P.forEach((p, i) => {
+                ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.o - 180) * Math.PI / 180);
+                ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 6; ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3;
+                ctx.drawImage(ptex, -p.wpx / 2, -p.hpx / 2, p.wpx, p.hpx);
+                ctx.shadowColor = 'transparent';
+                if (i === selP) { ctx.strokeStyle = '#f44'; ctx.lineWidth = 4; ctx.strokeRect(-p.wpx / 2 - 3, -p.hpx / 2 - 3, p.wpx + 6, p.hpx + 6); }
+                ctx.restore();
+            });
+            // Draw zone points
+            if (zonePoints.length > 0) {
+                ctx.strokeStyle = '#4CAF50'; ctx.fillStyle = '#4CAF50'; ctx.lineWidth = 2;
+                zonePoints.forEach((pt, i) => {
+                    ctx.beginPath(); ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText(i + 1, pt.x - 3, pt.y + 4); ctx.fillStyle = '#4CAF50';
+                });
+                if (zonePoints.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(zonePoints[0].x, zonePoints[0].y);
+                    for (let i = 1; i < zonePoints.length; i++)ctx.lineTo(zonePoints[i].x, zonePoints[i].y);
+                    if (zonePoints.length === 4) ctx.closePath();
+                    ctx.stroke();
+                }
+            }
+            updStats();
+        }
+
+        function updStats() {
+            const n = P.length, kw = P.reduce((s, p) => s + p.pw, 0) / 1000;
+            document.getElementById('sN').textContent = n;
+            document.getElementById('sP').textContent = kw.toFixed(2);
+            document.getElementById('sPr').textContent = Math.round(kw * 1150);
+            document.getElementById('sS').textContent = P.reduce((s, p) => s + p.wm * p.hm, 0).toFixed(1);
+        }
+
+        function setM(m) {
+            mode = m;
+            ['ba', 'bz', 'bp', 'bsel'].forEach(id => document.getElementById(id).classList.remove('on'));
+            document.getElementById({ add: 'ba', zone: 'bz', pan: 'bp', sel: 'bsel' }[m]).classList.add('on');
+            const bd = document.getElementById('mbadge');
+            bd.textContent = { add: 'AJOUT', zone: 'ZONE', pan: 'DÉPLACER', sel: 'SÉLECTION' }[m];
+            bd.className = 'badge ' + { add: 'add', zone: 'zone', pan: 'pan', sel: 'sel' }[m];
+            cv.style.cursor = { add: 'crosshair', zone: 'crosshair', pan: 'grab', sel: 'pointer' }[m];
+        }
+
+        function addP(cx, cy) {
+            hist.push(JSON.stringify(P)); if (hist.length > 50) hist.shift();
+            P.push({ x: cx, y: cy, o: ori, wpx: m2px(pmod.w), hpx: m2px(pmod.h), wm: pmod.w, hm: pmod.h, pw: pmod.p });
+            render();
+        }
+
+        function addGrid(cx, cy, c, r) {
+            hist.push(JSON.stringify(P)); if (hist.length > 50) hist.shift();
+            const wpx = m2px(pmod.w), hpx = m2px(pmod.h), gPx = m2px(gap / 100);
+            const tw = c * wpx + (c - 1) * gPx, th = r * hpx + (r - 1) * gPx;
+            const sx = cx - tw / 2 + wpx / 2, sy = cy - th / 2 + hpx / 2;
+            for (let ri = 0; ri < r; ri++)for (let ci = 0; ci < c; ci++)
+                P.push({ x: sx + ci * (wpx + gPx), y: sy + ri * (hpx + gPx), o: ori, wpx, hpx, wm: pmod.w, hm: pmod.h, pw: pmod.p });
+            render();
+        }
+
+        function selAt(cx, cy) { selP = null; for (let i = P.length - 1; i >= 0; i--) { const p = P[i]; if (Math.abs(cx - p.x) < p.wpx / 2 && Math.abs(cy - p.y) < p.hpx / 2) { selP = i; break; } } render(); }
+        function delSel() { if (selP !== null) { hist.push(JSON.stringify(P)); P.splice(selP, 1); selP = null; render(); } }
+        function clr() { if (P.length && confirm('Tout effacer?')) { hist.push(JSON.stringify(P)); P = []; selP = null; render(); } }
+        function undo() { if (hist.length) { P = JSON.parse(hist.pop()); selP = null; render(); } }
+
+        function zIn() { const r = 1.3; V.s = Math.min(5, V.s * r); V.ox = cc.clientWidth / 2 - (cc.clientWidth / 2 - V.ox) * r; V.oy = cc.clientHeight / 2 - (cc.clientHeight / 2 - V.oy) * r; updT(); }
+        function zOut() { const r = 1.3; V.s = Math.max(.2, V.s / r); V.ox = cc.clientWidth / 2 - (cc.clientWidth / 2 - V.ox) / r; V.oy = cc.clientHeight / 2 - (cc.clientHeight / 2 - V.oy) / r; updT(); }
+        function zRst() { V.s = 1; ctrV(); }
+
+        // Zone popup
+        const pop = document.getElementById('pop'), sel = document.getElementById('sel');
+        function showPop(x, y) { pop.style.left = Math.min(x, window.innerWidth - 250) + 'px'; pop.style.top = Math.min(y, window.innerHeight - 200) + 'px'; pop.style.display = 'block'; updGP(); }
+        function hidePop() { pop.style.display = 'none'; }
+        function updGP() {
+            const c = +document.getElementById('zc').value || 4, r = +document.getElementById('zr').value || 2;
+            document.getElementById('zt').textContent = c * r;
+            document.getElementById('gprev').style.gridTemplateColumns = `repeat(${c},18px)`;
+            document.getElementById('gprev').innerHTML = Array(c * r).fill('<div class="gcell"></div>').join('');
+        }
+        function confZ() {
+            if (zonePoints.length < 4) return;
+            const c = +document.getElementById('zc').value || 4, r = +document.getElementById('zr').value || 2;
+            // Calculate center of 4 points
+            const cx = (zonePoints[0].x + zonePoints[1].x + zonePoints[2].x + zonePoints[3].x) / 4;
+            const cy = (zonePoints[0].y + zonePoints[1].y + zonePoints[2].y + zonePoints[3].y) / 4;
+            addGrid(cx, cy, c, r);
+            hidePop(); zonePoints = []; render();
+        }
+        function canZ() { hidePop(); zonePoints = []; render(); }
+        function gp(c, r) { document.getElementById('gc').value = c; document.getElementById('gr').value = r; document.getElementById('zc').value = c; document.getElementById('zr').value = r; updGP(); }
+
+        document.getElementById('zc').oninput = updGP;
+        document.getElementById('zr').oninput = updGP;
+
+        // Events 2D
+        cc.onmousedown = e => {
+            if (view !== '2d') return;
+            const rect = cv.getBoundingClientRect();
+            // Account for rotation
+            const centerX = rect.left + rect.width / 2, centerY = rect.top + rect.height / 2;
+            const dx = e.clientX - centerX, dy = e.clientY - centerY;
+            const rad = -mapRot * Math.PI / 180;
+            const rx = dx * Math.cos(rad) - dy * Math.sin(rad), ry = dx * Math.sin(rad) + dy * Math.cos(rad);
+            const cx = (rx + rect.width / 2) / V.s, cy = (ry + rect.height / 2) / V.s;
+
+            if (mode === 'pan') { D.on = true; D.lx = e.clientX; D.ly = e.clientY; cv.style.cursor = 'grabbing'; }
+            else if (mode === 'add') addP(cx, cy);
+            else if (mode === 'sel') selAt(cx, cy);
+            else if (mode === 'zone') {
+                zonePoints.push({ x: cx, y: cy });
+                render();
+                if (zonePoints.length === 4) {
+                    showPop(e.clientX + 10, e.clientY + 10);
+                }
+            }
+        };
+
+        cc.onmousemove = e => {
+            if (view !== '2d') return;
+            const rect = cv.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2, centerY = rect.top + rect.height / 2;
+            const dx = e.clientX - centerX, dy = e.clientY - centerY;
+            const rad = -mapRot * Math.PI / 180;
+            const rx = dx * Math.cos(rad) - dy * Math.sin(rad), ry = dx * Math.sin(rad) + dy * Math.cos(rad);
+            const cx = (rx + rect.width / 2) / V.s, cy = (ry + rect.height / 2) / V.s;
+            const dmx = (cx - cv.width / 2) * CFG.mpp, dmy = (cy - cv.height / 2) * CFG.mpp;
+            document.getElementById('coord').textContent = `Δ ${dmx.toFixed(1)}m, ${dmy.toFixed(1)}m`;
+            if (D.on) { V.ox += e.clientX - D.lx; V.oy += e.clientY - D.ly; D.lx = e.clientX; D.ly = e.clientY; updT(); }
+        };
+
+        cc.onmouseup = e => {
+            if (D.on) { D.on = false; cv.style.cursor = 'grab'; }
+        };
+
+        cc.onwheel = e => {
+            if (view !== '2d') return;
+            e.preventDefault();
+            const d = e.deltaY > 0 ? .85 : 1.18, ns = Math.max(.2, Math.min(5, V.s * d));
+            const r = ns / V.s, cx = cc.clientWidth / 2, cy = cc.clientHeight / 2;
+            V.ox = cx - (cx - V.ox) * r; V.oy = cy - (cy - V.oy) * r; V.s = ns; updT();
+        };
+
+        document.onkeydown = e => {
+            if (e.key === 'Delete') delSel();
+            if (e.key === 'Escape') { selP = null; canZ(); render(); }
+            if (e.key === 'a') setM('add'); if (e.key === 'z') setM('zone'); if (e.key === 'v') setM('pan'); if (e.key === 's') setM('sel');
+            if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+            if (e.key === 'Enter' && zonePoints.length === 4) { showPop(window.innerWidth / 2, window.innerHeight / 2); }
+        };
+
+        document.getElementById('pmod').onchange = e => { const p = e.target.value.split(','); pmod = { w: +p[0], h: +p[1], p: +p[2] }; };
+        document.getElementById('ori').onchange = e => { ori = +e.target.value; };
+        document.getElementById('gap').oninput = e => { gap = +e.target.value; document.getElementById('gv').textContent = gap + 'cm'; };
+        document.getElementById('mapRot').oninput = e => { mapRot = +e.target.value; document.getElementById('mapRotVal').textContent = mapRot + '°'; updT(); };
+
+        // 3D View
+        function init3D() {
+            const c3 = document.getElementById('v3d');
+            if (!c3.clientWidth) return setTimeout(init3D, 100);
+            sc3 = new THREE.Scene(); sc3.background = new THREE.Color(0x87CEEB);
+            cam3 = new THREE.PerspectiveCamera(50, c3.clientWidth / c3.clientHeight, .1, 1000);
+            cam3.position.set(30, 25, 30); cam3.lookAt(0, 5, 0);
+            ren3 = new THREE.WebGLRenderer({ antialias: true });
+            ren3.setSize(c3.clientWidth, c3.clientHeight);
+            ren3.shadowMap.enabled = true;
+            c3.innerHTML = '';
+            c3.appendChild(ren3.domElement);
+            sc3.add(new THREE.AmbientLight(0xffffff, .6));
+            const sun = new THREE.DirectionalLight(0xffffff, .8); sun.position.set(20, 30, 10); sun.castShadow = true; sc3.add(sun);
+            const gnd = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshLambertMaterial({ color: 0x3d8c40 })); gnd.rotation.x = -Math.PI / 2; gnd.receiveShadow = true; sc3.add(gnd);
+            const house = new THREE.Mesh(new THREE.BoxGeometry(12, 7, 10), new THREE.MeshLambertMaterial({ color: 0xf5f5dc })); house.position.y = 3.5; house.castShadow = true; sc3.add(house);
+            const rs = new THREE.Shape(); rs.moveTo(-7, 0); rs.lineTo(0, 5); rs.lineTo(7, 0); rs.lineTo(-7, 0);
+            const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(rs, { depth: 12, bevelEnabled: false }), new THREE.MeshLambertMaterial({ color: 0x8B4513 }));
+            roof.rotation.x = -Math.PI / 2; roof.position.set(0, 7, -6); roof.castShadow = true; sc3.add(roof);
+
+            let drag3 = false, pm = { x: 0, y: 0 }, sph = { t: Math.PI / 4, p: Math.PI / 4, r: 45 };
+            function updCam3() { cam3.position.x = sph.r * Math.sin(sph.p) * Math.cos(sph.t); cam3.position.y = sph.r * Math.cos(sph.p); cam3.position.z = sph.r * Math.sin(sph.p) * Math.sin(sph.t); cam3.lookAt(0, 5, 0); }
+            ren3.domElement.onmousedown = e => { drag3 = true; pm = { x: e.clientX, y: e.clientY }; };
+            ren3.domElement.onmousemove = e => { if (!drag3) return; sph.t += (e.clientX - pm.x) * .01; sph.p = Math.max(.2, Math.min(Math.PI / 2 - .1, sph.p - (e.clientY - pm.y) * .01)); pm = { x: e.clientX, y: e.clientY }; updCam3(); };
+            ren3.domElement.onmouseup = () => drag3 = false;
+            ren3.domElement.onmouseleave = () => drag3 = false;
+            ren3.domElement.onwheel = e => { e.preventDefault(); sph.r = Math.max(15, Math.min(80, sph.r + e.deltaY * .03)); updCam3(); };
+            updCam3();
+            (function anim() { requestAnimationFrame(anim); if (ren3) ren3.render(sc3, cam3); })();
+        }
+
+        function upd3DP() {
+            if (!sc3) return;
+            pm3.forEach(m => sc3.remove(m)); pm3 = [];
+            const pg = new THREE.BoxGeometry(1.7, .05, 1.1), pmat = new THREE.MeshPhongMaterial({ color: 0x1a1a40, specular: 0x4444ff, shininess: 80 });
+            const roofPitch = 25 * Math.PI / 180;
+            P.forEach((p, i) => {
+                const m = new THREE.Mesh(pg, pmat.clone());
+                const c = i % 4, r = Math.floor(i / 4);
+                m.position.set((c - 1.5) * 1.9, 8.5 - r * 1.2 * Math.sin(roofPitch), -2 + (r - 0.5) * 1.2);
+                m.rotation.x = -roofPitch;
+                m.rotation.y = (p.o - 180) * Math.PI / 180;
+                m.castShadow = true;
+                m.add(new THREE.LineSegments(new THREE.EdgesGeometry(pg), new THREE.LineBasicMaterial({ color: 0xcccccc })));
+                sc3.add(m); pm3.push(m);
+            });
+        }
+
+        function setV(v) {
+            view = v;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+            document.querySelector('.tab:' + (v === '2d' ? 'first' : 'last') + '-child').classList.add('on');
+            cv.style.display = v === '2d' ? 'block' : 'none';
+            document.getElementById('v3d').style.display = v === '3d' ? 'block' : 'none';
+            if (v === '3d') {
+                if (!sc3) init3D();
+                setTimeout(upd3DP, 100);
+            }
+        }
+
+        function expImg() {
+            const tc = document.createElement('canvas'); tc.width = cv.width; tc.height = cv.height; const tctx = tc.getContext('2d');
+            tctx.drawImage(bg, 0, 0);
+            P.forEach(p => { tctx.save(); tctx.translate(p.x, p.y); tctx.rotate((p.o - 180) * Math.PI / 180); tctx.drawImage(ptex, -p.wpx / 2, -p.hpx / 2, p.wpx, p.hpx); tctx.restore(); });
+            const a = document.createElement('a'); a.download = 'calepinage_' + P.length + 'px.png'; a.href = tc.toDataURL('image/png'); a.click();
+        }
+
+        function expJSON() {
+            const d = { location: { lat: CFG.lat, lon: CFG.lon }, panels: P.map((p, i) => ({ id: i + 1, x: Math.round(p.x), y: Math.round(p.y), orient: p.o, w: p.wm, h: p.hm, power: p.pw })), summary: { n: P.length, kwc: (P.reduce((s, p) => s + p.pw, 0) / 1000).toFixed(2), prod: Math.round(P.reduce((s, p) => s + p.pw, 0) / 1000 * 1150) } };
+            const a = document.createElement('a'); a.download = 'calepinage.json'; a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' })); a.click();
+        }
+    </script>
+</body>
+
+</html>
