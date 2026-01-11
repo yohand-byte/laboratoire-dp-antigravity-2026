@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DP Generator Lab</title>
+    <style>
+        :root {
+            --primary: #ff6b35;
+            --secondary: #004e89;
+            --bg-dark: #0a0a12;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark), #0d1426);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #ff6b35, #ffcc00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            color: #888;
+            margin-bottom: 2rem;
+        }
+
+        .cards {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            width: 280px;
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 40px rgba(255, 107, 53, 0.2);
+        }
+
+        .card h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>☀️ DP Generator Lab</h1>
+    <p>Laboratoire de génération de Déclarations Préalables - Solaire Facile</p>
+
+    <div class="cards">
+        <a href="/dp/" class="card">
+            <div class="icon">📋</div>
+            <h3>Générateur DP</h3>
+            <p>Interface complète avec validation cartographique et génération PDF</p>
+        </a>
+
+        <a href="/calepinage/" class="card">
+            <div class="icon">📐</div>
+            <h3>Éditeur Calepinage</h3>
+            <p>Placement interactif des panneaux en 2D/3D sur orthophoto</p>
+        </a>
+
+        <a href="/api/health" class="card">
+            <div class="icon">🔧</div>
+            <h3>API Status</h3>
+            <p>Vérification des services et endpoints disponibles</p>
+        </a>
+    </div>
+</body>
+
+</html>
