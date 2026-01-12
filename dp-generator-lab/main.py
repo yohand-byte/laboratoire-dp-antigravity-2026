@@ -101,7 +101,16 @@ async def dp_generator(request: Request):
 
 
 @app.get("/calepinage/", response_class=HTMLResponse) 
-async def calepinage_editor(request: Request, lat: float, lon: float):
+async def calepinage_editor(
+    request: Request, 
+    lat: float, 
+    lon: float,
+    adresse: str = "",
+    cp: str = "",
+    ville: str = "",
+    societe: str = "SOLAIRE FACILE",
+    maitreOuvrage: str = ""
+):
     """Éditeur de calepinage interactif avec données réelles"""
     
     print(f"DEBUG: Requesting calepinage for {lat}, {lon}")
@@ -148,8 +157,16 @@ async def calepinage_editor(request: Request, lat: float, lon: float):
             print("ERROR: Failed to get map image")
 
     # Config JSON pour éviter erreurs JS
-    cfg_data = {"lat": lat, "lon": lon, "mpp": mpp}
-    import json
+    cfg_data = {
+        "lat": lat, 
+        "lon": lon, 
+        "mpp": mpp,
+        "adresse": adresse,
+        "cp": cp,
+        "ville": ville,
+        "societe": societe,
+        "maitreOuvrage": maitreOuvrage
+    }
     cfg_json = json.dumps(cfg_data)
 
     return templates.TemplateResponse(
@@ -259,10 +276,92 @@ async def generate_dp(project: DPProject):
     }
 
 
+from modules.pdf_generator import generate_complete_dp
+import base64
+from io import BytesIO
+
+@app.post("/api/generate-pdf")
+async def generate_pdf_endpoint(project_data: dict):
+    """
+    Génère le dossier PDF DP complet.
+    Reçoit les données projet et les captures base64 de l'éditeur.
+    """
+    lat = project_data.get("lat")
+    lon = project_data.get("lon")
+    
+    # 1. Collecte des images cartographiques via HTML-CARTO API
+    images = {}
+    
+    # Images à récupérer
+    map_configs = [
+        ("aerial_1000", "1:1000", ["ortho"]),
+        ("map_2000", "1:2000", ["ortho"]),
+        ("map_5000", "1:5000", ["ortho"]),
+        ("cadastre_1000", "1:1000", ["cadastre"]),
+        ("cadastre_250", "1:500", ["cadastre"]), # On utilise 1:500 car 1:250 pas encore supporté par API
+    ]
+    
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        for key, scale, layers in map_configs:
+            try:
+                resp = await client.post(
+                    f"{HTML_CARTO_API}/api/render-map",
+                    json={
+                        "lat": lat, "lon": lon, "scale": scale,
+                        "layers": layers, "width": 1600, "height": 1000
+                    }
+                )
+                if resp.status_code == 200:
+                    img_b64 = resp.json().get("image", "")
+                    if "," in img_b64: img_b64 = img_b64.split(",")[1]
+                    images[key] = base64.b64decode(img_b64)
+            except Exception as e:
+                print(f"Error fetching {key}: {e}")
+
+    # 2. Ajout des images venant du client (calepinage, 3d)
+    for key in ["calepinage", "3d"]:
+        b64_data = project_data.get(f"image_{key}", "")
+        if b64_data:
+            if "," in b64_data: b64_data = b64_data.split(",")[1]
+            images[key] = base64.b64decode(b64_data)
+
+    # 3. Préparation des données pour ReportLab
+    pdf_data = {
+        "maitre_ouvrage": project_data.get("maitreOuvrage", "Client"),
+        "adresse": project_data.get("adresse", ""),
+        "cp": project_data.get("cp", ""),
+        "ville": project_data.get("ville", ""),
+        "societe": project_data.get("societe", "SOLAIRE FACILE"),
+        "parcelle": project_data.get("parcelle", ""),
+        "puissance": project_data.get("puissance", "3.0"),
+        "nombre_panneaux": project_data.get("nbPanneaux", 0),
+        "azimuth": project_data.get("azimuth", 180)
+    }
+    
+    # 4. Génération effective
+    output_filename = f"DP_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    output_path = os.path.join("/tmp", output_filename)
+    
+    try:
+        generate_complete_dp(pdf_data, images, output_path)
+        
+        # Retourner le PDF en base64 ou via StreamingResponse
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            output_path, 
+            media_type="application/pdf", 
+            filename=output_filename
+        )
+    except Exception as e:
+        print(f"PDF Generation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============================================================
 # MAIN
 # ============================================================
 
 if __name__ == "__main__":
     import uvicorn
+    from datetime import datetime
     uvicorn.run(app, host="0.0.0.0", port=8080)

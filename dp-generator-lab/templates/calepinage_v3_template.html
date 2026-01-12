@@ -362,12 +362,12 @@
                     id="mapRot" min="0" max="359" value="0"></div>
             <div class="ctrl"><label>Espacement: <span id="gv">5cm</span></label><input type="range" id="gap" min="0"
                     max="20" value="5"></div>
-            <h2>💾 EXPORT</h2>
-            <div class="bg">
-                <button class="btn bs" onclick="expImg()">📷 Image</button>
-                <button class="btn bs" onclick="expJSON()">💾 JSON</button>
+            <h2>📄 GÉNÉRATION</h2>
+            <div class="ctrl">
+                <button class="btn bp" style="width:100%" onclick="generatePDF()">📄 GÉNÉRER DOSSIER PDF</button>
+                <p id="pdfStatus" style="font-size:0.75em;color:#aaa;margin-top:6px;text-align:center"></p>
             </div>
-            <button class="btn br" style="width:100%;margin-top:4px" onclick="clr()">🗑️ Effacer tout</button>
+            <button class="btn br" style="width:100%;margin-top:12px" onclick="clr()">🗑️ Effacer tout</button>
         </div>
         <div class="main">
             <div class="tb">
@@ -687,6 +687,70 @@
         function expJSON() {
             const d = { location: { lat: CFG.lat, lon: CFG.lon }, panels: P.map((p, i) => ({ id: i + 1, x: Math.round(p.x), y: Math.round(p.y), orient: p.o, w: p.wm, h: p.hm, power: p.pw })), summary: { n: P.length, kwc: (P.reduce((s, p) => s + p.pw, 0) / 1000).toFixed(2), prod: Math.round(P.reduce((s, p) => s + p.pw, 0) / 1000 * 1150) } };
             const a = document.createElement('a'); a.download = 'calepinage.json'; a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' })); a.click();
+        }
+        async function generatePDF() {
+            const status = document.getElementById('pdfStatus');
+            status.textContent = 'Génération du PDF...';
+
+            try {
+                // 1. Capture 2D calepinage
+                const tc = document.createElement('canvas'); tc.width = cv.width; tc.height = cv.height; const tctx = tc.getContext('2d');
+                tctx.drawImage(bg, 0, 0);
+                P.forEach(p => { tctx.save(); tctx.translate(p.x, p.y); tctx.rotate((p.o - 180) * Math.PI / 180); tctx.drawImage(ptex, -p.wpx / 2, -p.hpx / 2, p.wpx, p.hpx); tctx.restore(); });
+                const img2d = tc.toDataURL('image/png');
+
+                // 2. Capture 3D view (if initialized)
+                let img3d = null;
+                if (ren3) {
+                    // Temporarily force 3D view if hidden
+                    const wasHidden = document.getElementById('v3d').style.display === 'none';
+                    if (wasHidden) setV('3d');
+                    ren3.render(sc3, cam3); // Force render for capture
+                    img3d = ren3.domElement.toDataURL('image/png');
+                    if (wasHidden) setV('2d');
+                }
+
+                // 3. Prepare data
+                const payload = {
+                    lat: CFG.lat,
+                    lon: CFG.lon,
+                    adresse: CFG.adresse,
+                    cp: CFG.cp,
+                    ville: CFG.ville,
+                    societe: CFG.societe,
+                    maitreOuvrage: CFG.maitreOuvrage,
+                    nbPanneaux: P.length,
+                    puissance: (P.reduce((s, p) => s + p.pw, 0) / 1000).toFixed(2),
+                    azimuth: ori,
+                    image_calepinage: img2d,
+                    image_3d: img3d
+                };
+
+                // 4. Send to server
+                const resp = await fetch('/api/generate-pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (resp.ok) {
+                    const blob = await resp.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `DP_${CFG.maitreOuvrage || 'client'}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    status.textContent = 'PDF généré avec succès !';
+                } else {
+                    const err = await resp.json();
+                    status.textContent = 'Erreur: ' + (err.detail || 'Inconnue');
+                }
+            } catch (e) {
+                console.error(e);
+                status.textContent = 'Erreur client lors de la génération';
+            }
         }
     </script>
 </body>
