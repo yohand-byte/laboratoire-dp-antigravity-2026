@@ -27,7 +27,7 @@ PAGE_WIDTH, PAGE_HEIGHT = landscape(A4)
 MARGIN = 15 * mm
 
 def detect_image_suffix(content: bytes) -> str:
-    \"\"\"Détecte une extension probable (jpg/png) à partir des magic bytes.\"\"\"
+    """Détecte une extension probable (jpg/png) à partir des magic bytes."""
     if not content:
         return ".img"
     if content.startswith(b"\xff\xd8"):
@@ -37,7 +37,7 @@ def detect_image_suffix(content: bytes) -> str:
     return ".img"
 
 class DPColors:
-    \"\"\"Couleurs utilisées dans le document\"\"\"
+    """Couleurs utilisées dans le document"""
     PRIMARY_BLUE = HexColor('#003366')
     ACCENT_ORANGE = HexColor('#FFA500')
     PANEL_GRAY = HexColor('#50506E')
@@ -51,7 +51,7 @@ class DPColors:
 
 
 class PDFGenerator:
-    \"\"\"Générateur de PDF pour les dossiers DP Mairie\"\"\"
+    """Générateur de PDF pour les dossiers DP Mairie"""
     
     def __init__(self, output_path: str):
         self.output_path = output_path
@@ -60,7 +60,7 @@ class PDFGenerator:
         self.height = PAGE_HEIGHT
         
     def draw_footer(self, company_name: str, scale: str, title: str, logo_path: str = None):
-        \"\"\"Dessine le footer standardisé sur la page courante\"\"\"
+        """Dessine le footer standardisé sur la page courante"""
         footer_height = 12 * mm
         footer_y = MARGIN
         
@@ -99,7 +99,7 @@ class PDFGenerator:
     
     def draw_compass(self, x: float, y: float, size: float = 60, 
                      with_azimuth: bool = False, azimuth: float = 0):
-        \"\"\"Dessine une rose des vents\"\"\"
+        """Dessine une rose des vents"""
         self.c.saveState()
         
         center_x = x + size / 2
@@ -168,7 +168,7 @@ class PDFGenerator:
             # Label de l'angle
             self.c.setFont("Helvetica", 7)
             self.c.setFillColor(DPColors.BORDER_RED)
-            self.c.drawString(end_x + 3, end_y, f\"{int(azimuth)}°\")
+            self.c.drawString(end_x + 3, end_y, f"{int(azimuth)}°")
         
         # Point central
         self.c.setFillColor(HexColor('#333333'))
@@ -178,7 +178,7 @@ class PDFGenerator:
     
     def draw_legend_box(self, x: float, y: float, width: float, 
                         items: List[Tuple[str, str]], title: str = "Légende supplémentaire:"):
-        \"\"\"Dessine une boîte de légende\"\"\"
+        """Dessine une boîte de légende"""
         item_height = 6 * mm
         padding = 3 * mm
         total_height = padding + 5 * mm + len(items) * item_height + padding
@@ -212,7 +212,7 @@ class PDFGenerator:
                           width: float, height: float, border: bool = True,
                           placeholder_text: str = None, name: str = "unknown",
                           strict: bool = False):
-        \"\"\"Ajoute une image sur la page, sinon un placeholder lisible.\"\"\"
+        """Ajoute une image sur la page, sinon un placeholder lisible."""
         if not image_bytes:
             if strict:
                 raise ValueError(f"missing/invalid {name}")
@@ -246,7 +246,7 @@ class PDFGenerator:
                           width: float, height: float, caption: Optional[str] = None,
                           return_box: bool = False, name: str = "unknown",
                           strict: bool = False):
-        \"\"\"Ajoute une image en mode 'contain' centré.\"\"\"
+        """Ajoute une image en mode 'contain' centré."""
         if not image_bytes:
             if strict: raise ValueError(f"missing/invalid {name}")
             self.c.setStrokeColor(black)
@@ -305,18 +305,92 @@ class PDFGenerator:
         self.c.setFillColor(DPColors.PRIMARY_BLUE); self.c.rect(left_x, img_y + img_h - bar_h, img_w, bar_h, fill=1, stroke=0)
         self.c.setFillColor(white); self.c.setFont("Helvetica-Bold", 18); self.c.drawCentredString(left_x + img_w / 2, img_y + img_h - bar_h / 2 - 2, "DÉCLARATION PRÉALABLE")
         if image_3d: self.add_image_contain(image_3d, left_x, img_y, img_w, img_h - bar_h)
-        pieces = [("DP1", "Plan de situation"), ("DP2", "Plan de masse"), ("DP4", "Calepinage"), ("DP5", "Visualisation 3D"), ("DP6", "Insertion"), ("DP7", "Près"), ("DP8", "Loin"), ("DP11", "Notice")]
-        self.c.setFillColor(black); list_y = img_y - 9 * mm
+        # Liste des pièces corrigée selon standard
+        pieces = [
+            ("DP1 :", "Plan de situation"),
+            ("DP2 :", "Plan de masse"),
+            ("DP4 :", "Calpinage"),
+            ("DP5 :", "Visualisation 3D"),
+            ("DP6 :", "Insertion du projet"),
+            ("DP7 :", "Terrain vue de près"),
+            ("DP8 :", "Terrain vue de loin"),
+            ("DP11 :", "Note architecturale")
+        ]
+        
+        self.c.setFillColor(black)
+        list_y = img_y - 9 * mm
+        
         for code, label in pieces:
-            self.c.setFont("Helvetica-Bold", 11); self.c.drawString(left_x + 6, list_y, f"{code} :"); self.c.setFont("Helvetica", 11); self.c.drawString(left_x + 32, list_y, label); list_y -= 7 * mm
+            # Code en gras
+            self.c.setFont("Helvetica-Bold", 10)
+            self.c.drawString(left_x, list_y, code)
+            
+            # Label en dessous (selon extraction PDF référence) ou à côté ?
+            # L'extraction montre "DP1 : \n Plan de situation", donc peut-être en dessous ou décalé.
+            # Le screenshot standard montrait une liste alignée. Gardons aligné mais avec les bons textes.
+            self.c.setFont("Helvetica", 10)
+            self.c.drawString(left_x + 35, list_y, label)
+            list_y -= 6 * mm
+            
+        # Ajout "DOSSIER REALISE PAR" en bas à droite
+        self.c.setFont("Helvetica-Bold", 8)
+        self.c.setFillColor(DPColors.PRIMARY_BLUE)
+        self.c.drawCentredString(right_x + col_right_w / 2, 20 * mm, "DOSSIER REALISE PAR")
+        
+        # Logo (variable) ou nom société (variable) en dessous
+        logo_path = data.get('logo_path')
+        if logo_path and os.path.exists(logo_path):
+            # Dessiner le logo centré
+            lb_x = right_x + col_right_w / 2 - 20 * mm
+            lb_y = 5 * mm
+            lb_w = 40 * mm
+            lb_h = 12 * mm
+            try:
+                self.c.drawImage(logo_path, lb_x, lb_y, width=lb_w, height=lb_h, preserveAspectRatio=True, mask='auto')
+            except Exception as e:
+                logging.error(f"Error drawing logo on cover: {e}")
+                self.c.setFillColor(black)
+                self.c.drawCentredString(right_x + col_right_w / 2, 15 * mm, data.get('societe', 'SOLAIRE FACILE'))
+        else:
+            self.c.setFillColor(black)
+            self.c.drawCentredString(right_x + col_right_w / 2, 15 * mm, data.get('societe', 'SOLAIRE FACILE'))
         current_y = self.height - MARGIN - 28 * mm
         def draw_block(title, lines):
             nonlocal current_y
-            self.c.setFillColor(DPColors.PRIMARY_BLUE); self.c.rect(right_x, current_y, col_right_w, 28 * mm, fill=1, stroke=0)
-            self.c.setFillColor(white); self.c.setFont("Helvetica-Bold", 11); self.c.drawCentredString(right_x + col_right_w / 2, current_y + 28*mm - 10, title)
-            self.c.setFont("Helvetica-Bold", 10); offset = 20
-            for l in lines: self.c.drawCentredString(right_x + col_right_w / 2, current_y + 28*mm - offset, l); offset += 12
-            current_y -= (28*mm + 8*mm)
+            block_h = 28 * mm
+            # Fond bleu
+            self.c.setFillColor(DPColors.PRIMARY_BLUE)
+            self.c.rect(right_x, current_y, col_right_w, block_h, fill=1, stroke=0)
+            
+            # Calcul hauteur contenu pour centrage vertical
+            # Titre: ~11pt, Espace: 4pt, Lignes: ~10pt + espace 2pt
+            title_h = 11
+            line_h = 10
+            line_spacing = 2
+            content_h = title_h + 4 + len(lines) * (line_h + line_spacing) - line_spacing
+            
+            # Start Y (depuis le haut du bloc)
+            top_padding = (block_h/mm * 2.83465 - content_h) / 2 # conversion mm->pt
+            
+            # Dessin Titre
+            self.c.setFillColor(white)
+            self.c.setFont("Helvetica-Bold", 11)
+            # Y position en pt depuis le bas de la page
+            # current_y est le bas du rectangle
+            # On veut dessiner par rapport au haut du rectangle (current_y + block_h)
+            draw_y = current_y + block_h - (top_padding * mm / 2.83465) - 8 # Ajustement empirique retour mm
+            
+            self.c.drawCentredString(right_x + col_right_w / 2, draw_y, title)
+            
+            # Dessin Lignes
+            self.c.setFont("Helvetica-Bold", 10)
+            draw_y -= (14) # Espace sous titre
+            
+            for l in lines:
+                self.c.drawCentredString(right_x + col_right_w / 2, draw_y, l)
+                draw_y -= 12
+                
+            current_y -= (block_h + 8*mm)
         draw_block("PROJET", ["Pose de panneaux photovoltaïques"])
         draw_block("MAÎTRE D'OUVRAGE", [data.get("maitre_ouvrage", "")])
         draw_block("ADRESSE DU PROJET", [data.get("adresse", ""), f"{data.get('cp','')} {data.get('ville','')}".strip()])
